@@ -48,6 +48,9 @@ int main(int argc, char **argv) {
 		case '?':
 			err = 1;
 			break;
+        case ':':
+            err = 1;
+            break;
 		}
         
     }
