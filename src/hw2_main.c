@@ -52,12 +52,13 @@ int main(int argc, char **argv) {
         
     }
     if(cflag < 0 || pflag < 0 || rflag < 0 || iflag <= 0 || oflag <= 0) return MISSING_ARGUMENT;
-    if(err == 1) return UNRECOGNIZED_ARGUMENT;
-    if(iflag > 1 || oflag > 1 || cflag > 1 || pflag > 1 || rflag > 1) {
+    else if(err == 1) return UNRECOGNIZED_ARGUMENT;
+    else if(iflag > 1 || oflag > 1 || cflag > 1 || pflag > 1 || rflag > 1) {
         printf("\n\nunrecognized something\n\n");
         return DUPLICATE_ARGUMENT;
     }
-    return 0;
+    
+    return 10;
     (void)argc;
     (void)argv;
 
