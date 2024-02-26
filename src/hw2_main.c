@@ -45,17 +45,27 @@ int main(int argc, char **argv) {
             if(optarg[0] == '-') rflag = -9999;
             rflag += 1;
 			break;
-		case '?':
-			err = 1;
-			break;
         case ':':
             err = 1;
-            break;
+            break;    
+		case '?':
+            // printf("optind = %d\nargc  = %d", optind,argc);
+            if(optind >= argc){
+                iflag = -9999;
+            }
+			err = 1;
+			break;
 		}
         
     }
-    if(cflag < 0 || pflag < 0 || rflag < 0 || iflag <= 0 || oflag <= 0) return MISSING_ARGUMENT;
-    else if(err == 1) return UNRECOGNIZED_ARGUMENT;
+    if(cflag < 0 || pflag < 0 || rflag < 0 || iflag <= 0 || oflag <= 0) {
+        printf("\n\nRETURNING MISSING ARGUMENT\n\n");
+        return MISSING_ARGUMENT; }
+    else if(err == 1) {
+        printf("\n err = %d \n cflag = %d \n pflag = %d \n rflag = %d \n iflag = %d \n oflag = %d", err,cflag,pflag,rflag,iflag,oflag);
+        printf("Returning UNRECOGNIZED ARGUMENT");
+        return UNRECOGNIZED_ARGUMENT;
+    }
     else if(iflag > 1 || oflag > 1 || cflag > 1 || pflag > 1 || rflag > 1) {
         printf("\n\nunrecognized something\n\n");
         return DUPLICATE_ARGUMENT;
