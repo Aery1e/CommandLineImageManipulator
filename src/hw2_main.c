@@ -57,8 +57,8 @@ int main(int argc, char **argv) {
         printf("\n\nunrecognized something\n\n");
         return DUPLICATE_ARGUMENT;
     }
-    
-    return 10;
+
+    return 0;
     (void)argc;
     (void)argv;
 
