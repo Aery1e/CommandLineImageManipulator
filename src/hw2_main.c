@@ -19,56 +19,45 @@ int main(int argc, char **argv) {
     int cflag = 0; 
     int pflag = 0;
     int rflag = 0; 
-    while ((c = getopt(argc, argv, "i:o:")) != -1) {
+    while ((c = getopt(argc, argv, "i:o:c:p:r:")) != -1) {
 		switch (c) {
 		case 'i':
-            if(optarg[0] == '-') return MISSING_ARGUMENT;
-            if(iflag == 1){
-                return DUPLICATE_ARGUMENT;
-            }
-            iflag = 1;
+            if(optarg[0] == '-') iflag = -9999;
             iname = optarg;
+            iflag += 1;
             printf("iname = %s\n", iname);
 			break;
 		case 'o':
-            if(optarg[0] == '-') return MISSING_ARGUMENT;
-            if(oflag == 1){
-                return DUPLICATE_ARGUMENT;
-            }
-            oflag = 1;
+            if(optarg[0] == '-') oflag = -9999;
             oname = optarg;
+            oflag += 1;
             printf("oname = %s\n", oname);
 			break;
 		case 'c':
-            if(optarg[0] == '-') return MISSING_ARGUMENT;
-			break;
-            if(cflag == 1){
-                return DUPLICATE_ARGUMENT;
-            }
-            cflag = 1;
+            if(optarg[0] == '-') cflag = -9999;
+            cflag += 1;
             break;
 		case 'p':
-            if(optarg[0] == '-') return MISSING_ARGUMENT;
-            if(pflag == 1){
-                return DUPLICATE_ARGUMENT;
-            }
-            pflag = 1;
+            if(optarg[0] == '-') pflag = -9999;
+            pflag += 1;
 			break;
 		case 'r':
-            if(optarg[0] == '-') return MISSING_ARGUMENT;
-            if(rflag == 1){
-                return DUPLICATE_ARGUMENT;
-            }
-            rflag = 1;
+            if(optarg[0] == '-') rflag = -9999;
+            rflag += 1;
 			break;
 		case '?':
 			err = 1;
 			break;
 		}
-        if(err == 1){
-            return UNRECOGNIZED_ARGUMENT;
-        }
+        
     }
+    if(cflag < 0 || pflag < 0 || rflag < 0 || iflag <= 0 || oflag <= 0) return MISSING_ARGUMENT;
+    if(err == 1) return UNRECOGNIZED_ARGUMENT;
+    if(iflag > 1 || oflag > 1 || cflag > 1 || pflag > 1 || rflag > 1) {
+        printf("\n\nunrecognized something\n\n");
+        return DUPLICATE_ARGUMENT;
+    }
+    return 0;
     (void)argc;
     (void)argv;
 
