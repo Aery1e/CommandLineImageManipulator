@@ -134,6 +134,13 @@ int main(int argc, char **argv) {
         if(rnumberofcommas != 4 || rname_end == ','){
             return R_ARGUMENT_INVALID;
         }
+        char *token;
+        token = strtok(rname, ",");
+        token = strtok(NULL, ",");
+        printf("1: %s\n", token);
+        if(!fopen(token,"r")){
+            return R_ARGUMENT_INVALID;
+        } //this is never closed... uh oh
     }
     // fclose(fpr);
     // fclose(fpw);
