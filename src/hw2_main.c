@@ -159,7 +159,7 @@ int main(int argc, char **argv) {
     
     printf("Dimensions : %d %d\n", column, row);
     //Read line 3 if the file is .sbu (for the color table), and store it in an array
-    unsigned int working_content_ppm_format[row*3][column*3];
+    unsigned int working_content_ppm_format[row][column*3];
     unsigned int working_content_current_row = 0;
     unsigned int working_content_current_column = 0; //Rows and column indices for the content array.
     if(!strcmp(iname_file_extension,".sbu")){ //Handling SBU Files
@@ -196,20 +196,20 @@ int main(int argc, char **argv) {
                     working_content_ppm_format[working_content_current_row][working_content_current_column+2] = color_table[color_table_reference_value*3 + 2]; //writes the triple of RGB values from the color table.
                     star_run_index++;
                     working_content_current_column += 3; //moves over 3 spaces for the next triple
-                    if(working_content_current_column >= column*3){ //Resets to the start of the next row of the 2D content array when reaching the end of a row.
+                    if(working_content_current_column > column*3 - 1){ //Resets to the start of the next row of the 2D content array when reaching the end of a row.
                         working_content_current_column = 0;
                         working_content_current_row++;
                     }
                 }
             }
-            else{
+            else{ //no star value saving
                 color_table_reference_value = strtoul(content_sbu_star_checker, NULL, 10); //pulls the value
                 // printf("%u ", color_table_reference_value);
                 working_content_ppm_format[working_content_current_row][working_content_current_column] = color_table[color_table_reference_value*3];
                 working_content_ppm_format[working_content_current_row][working_content_current_column+1] = color_table[color_table_reference_value*3 + 1];
                 working_content_ppm_format[working_content_current_row][working_content_current_column+2] = color_table[color_table_reference_value*3 + 2];
                 working_content_current_column += 3;
-                if(working_content_current_column > column*3){ //Resets to the start of the next row of the 2D content array when reaching the end of a row.
+                if(working_content_current_column > column*3 - 1){ //Resets to the start of the next row of the 2D content array when reaching the end of a row.
                     working_content_current_column = 0;
                     working_content_current_row++;
                 }
@@ -217,13 +217,15 @@ int main(int argc, char **argv) {
         }
     }
     else{ //working with .ppm file, just export all content from line 4 down to the end of the file into a double array
-        fgets(buffer, sizeof(buffer), working_file); //Skip line 3
+        //fgets(buffer, sizeof(buffer), working_file); //Skip line 3
         unsigned int current_value = 69; 
         fscanf(working_file, "%u", &current_value); //Skips the 255 i guess?
-        while(fscanf(working_file, "%u", &current_value) == 1){
+        while((fscanf(working_file, "%u", &current_value) == 1) && working_content_current_row < row){
             working_content_ppm_format[working_content_current_row][working_content_current_column] = current_value;
+            // printf("wrote %u ", current_value);
+            // printf("Writing %u at Row %u, Column %u \n", current_value, working_content_current_row,working_content_current_column);
             working_content_current_column++;
-            if(working_content_current_column > column*3){
+            if(working_content_current_column > column*3 - 1){
                 working_content_current_column = 0;
                 working_content_current_row++;
             }
@@ -234,6 +236,7 @@ int main(int argc, char **argv) {
     //Printing Stuff:
     // printf("\n\n CURRENT CONTENT:\n");
     // for(unsigned int ro = 0; ro < row; ro++){
+    //     printf("Current Row: %u\n", ro);
     //     for(unsigned int col = 0; col < column*3; col++){
     //         printf("%u ", working_content_ppm_format[ro][col]);
     //     }
@@ -249,27 +252,38 @@ int main(int argc, char **argv) {
     //For the rest of the functions, convert from .sbu to .ppm format, do the function, and convert back from .ppm to .sbu at the end for an output. 
     //This is to avoid having to manipulate values while using counters.
     
+    //Copying:
+
+    //Pasting:
+
+    //Writing with font:
+
     fclose(working_file); //End of reading the file.
 
     //Exporting/Saving the file:
     FILE *output_file = fopen(oname,"w");
     working_content_current_row = 0;
     working_content_current_column = 0;
-    if(!strcmp(iname_file_extension,".sbu")){//.SBU Output
+    if(!strcmp(oname_file_extension,".sbu")){//.SBU Output
 
     }
     else{ //.PPM Output
         fprintf(output_file,"P3\n");
         fprintf(output_file,"%u %u\n", column, row);
         fprintf(output_file,"255\n");
-        while(working_content_current_row < row*3){
+        while(working_content_current_row < row){
             fprintf(output_file,"%u ", working_content_ppm_format[working_content_current_row][working_content_current_column]);
+            // if(working_content_current_row%2 == 0) fprintf(output_file,"255 ");
+            // else fprintf(output_file,"0 ");
+            // printf("Wrote %u", working_content_ppm_format[working_content_current_row][working_content_current_column]);
             working_content_current_column++;
-            if(working_content_current_column > column*3){
+            if(working_content_current_column > column*3 - 1){ //Remember to sync up the save and load checks!
                 working_content_current_column = 0;
+                fprintf(output_file, "\n");
                 working_content_current_row++ ;
             }
         }
+        printf("%u", working_content_ppm_format[0][0]);
     }
     fclose(output_file);
     return 0;
