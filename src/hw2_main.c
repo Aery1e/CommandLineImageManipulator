@@ -282,7 +282,7 @@ int main(int argc, char **argv) {
         //printf("%i %i %i %i ", c_row, c_col, c_width, c_height);
         unsigned int c_array[c_height_max][c_width_max];
 
-        printf("\nc_array Dimensions: %i %i\n",  c_width_max,c_height_max);
+        // printf("\nc_array Dimensions: %i %i\n",  c_width_max,c_height_max);
         // exit(1);
         int working_c_row_index = c_row; //starting row to copy from
         int working_c_col_index = c_col*3; //starting col to copy from
@@ -324,7 +324,8 @@ int main(int argc, char **argv) {
             else{
                 p_width_max = ((int)column - p_col)*3;
             }
-            // printf("p_height_max = %i", p_height_max);
+            // printf("Max rows to print: %i\n", p_height_max);
+            // printf("Max columns to print: %i\n", p_width_max/3);
             while(p_row_index < p_row + p_height_max){
                 while(p_col_index < p_col*3 + p_width_max){
                     working_content_ppm_format[p_row_index][p_col_index] = c_array[c_array_pasting_row_index][c_array_pasting_col_index];
@@ -398,7 +399,8 @@ int main(int argc, char **argv) {
         fprintf(output_file,"%u %u\n", column, row);
         //You are basically going to build a color table while iterating through the content array. Read each triple as 3 seperate variables,
         //and compare that to each triple in the color array. If there is a match, then move to the next. If there isn't then add the triple at the color array and move on.
-        unsigned int color_table_array[column*row*3]; //Safest allocation of memory is probably to assume each pixel has a unique color.
+        // unsigned int color_table_array[column*row*3]; //Safest allocation of memory is probably to assume each pixel has a unique color.
+        unsigned int color_table_array[255*255*3];
         unsigned int rgb_value1 = 333;
         unsigned int rgb_value2 = 333;
         unsigned int rgb_value3 = 333;
