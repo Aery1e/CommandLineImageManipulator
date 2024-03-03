@@ -335,15 +335,76 @@ int main(int argc, char **argv) {
             // if(color_table_printing_index == 179960) printf("Color table data at index 179961+: %u \n", color_table_array[color_table_printing_index]);
             fprintf(output_file, "%u ", color_table_array[color_table_printing_index]);
         }
-        for(unsigned int i = 0; i < row*column*3 ; i++){
-            printf("%u ", color_table_array[i]);
-        }
+        // for(unsigned int i = 0; i < row*column*3 ; i++){
+        //     printf("%u ", color_table_array[i]);
+        // }
         // printf("numb: %i",number_of_color_table_elements*3);
         // printf("Color table data at index 179961,2,3: %u %u %u", color_table_array[179961], color_table_array[179962], color_table_array[179963]);
         //To construct the content from the color table, compare each triple to the color table, search for the corresponding index, and insert that index. 
         //The star value can either be handled along with this, or another pass can be done to handle the repeats to create star values afterwards.
         //Count the number of times the triplet appears until you hit a unique one (prob need a leading and a lagging pointer for this), add 1 to a counter until you hit the differing one
         //then paste '*'counter, and the index of the colortable right after. In the case that counter == 1 (as in, the pixel only appears once), just fprintf the index of colortable.
+        working_content_current_column = 0;
+        working_content_current_row = 0;
+        int current_color_table_index = 0;
+        int star_repeat_value_counter = 1; 
+        fprintf(output_file, "\n"); //New line for the content
+        while(working_content_current_row < row){
+            rgb_value1 = working_content_ppm_format[working_content_current_row][working_content_current_column];
+            rgb_value2 = working_content_ppm_format[working_content_current_row][working_content_current_column + 1];
+            rgb_value3 = working_content_ppm_format[working_content_current_row][working_content_current_column + 2];
+            // printf("Reading %u %u %u ", rgb_value1,rgb_value2,rgb_value3);
+            for(unsigned int color_table_array_index = 0; color_table_array_index < column*row*3 - 1; color_table_array_index += 3){ //Checks every triple!
+                if(rgb_value1 == color_table_array[color_table_array_index] 
+                && rgb_value2 == color_table_array[color_table_array_index + 1] 
+                && rgb_value3 == color_table_array[color_table_array_index + 2]){
+                    current_color_table_index = color_table_array_index;
+                    break; //Find the correspond triplet index, then save it at that variable.
+                }
+                if(0 == color_table_array[color_table_array_index] 
+                && 0 == color_table_array[color_table_array_index + 1] 
+                && 0 == color_table_array[color_table_array_index + 2]
+                && 0 == color_table_array[color_table_array_index + 3] 
+                && 0 == color_table_array[color_table_array_index + 4] 
+                && 0 == color_table_array[color_table_array_index + 5]) break; //End of the currently written color table. Break to save on time reading a bunch of 0 triplets and such.
+            }
+            if(working_content_current_column + 3 > column*3 - 1 && working_content_current_row + 1 < row){ //Checks for duplicate triplet in the next row (if we have to wrap around)
+                if(rgb_value1 == working_content_ppm_format[working_content_current_row + 1][0] 
+                && rgb_value2 == working_content_ppm_format[working_content_current_row + 1][1] 
+                && rgb_value3 == working_content_ppm_format[working_content_current_row + 1][2]){
+                    star_repeat_value_counter++;
+                }
+                else{
+                    if(star_repeat_value_counter == 1) fprintf(output_file,"%i ", current_color_table_index/3);
+                    else{
+                        fprintf(output_file,"*%i ", star_repeat_value_counter);
+                        fprintf(output_file,"%i ", current_color_table_index/3);
+                    }
+                    star_repeat_value_counter = 1;
+                }
+            }
+            else{//else, checks for the duplicates in the next row
+                if(rgb_value1 == working_content_ppm_format[working_content_current_row][working_content_current_column + 3] 
+                && rgb_value2 == working_content_ppm_format[working_content_current_row][working_content_current_column + 4] 
+                && rgb_value3 == working_content_ppm_format[working_content_current_row][working_content_current_column + 5]){
+                    star_repeat_value_counter++;
+                }
+                else{
+                    if(star_repeat_value_counter == 1) fprintf(output_file,"%i ", current_color_table_index/3);
+                    else{
+                        fprintf(output_file,"*%i ", star_repeat_value_counter);
+                        fprintf(output_file,"%i ", current_color_table_index/3);
+                    }
+                    star_repeat_value_counter = 1;
+                }
+            }
+            //Handling interation:
+            working_content_current_column += 3;
+            if(working_content_current_column > column*3 - 1){ //Remember to sync up the save and load checks!
+                working_content_current_column = 0;
+                working_content_current_row++ ;
+            }
+        }
     }
     else{ //.PPM Output
         fprintf(output_file,"P3\n");
