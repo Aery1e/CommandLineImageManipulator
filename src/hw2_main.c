@@ -253,9 +253,138 @@ int main(int argc, char **argv) {
     //This is to avoid having to manipulate values while using counters.
     
     //Copying:
+    if(cflag == 1){
+        //copy stuff from the thing to a new 2d array, store it
+        char *ctoken;
+        ctoken = strtok(cname, ",");
+        int c_row = atoi(ctoken);
+        ctoken = strtok(NULL, ",");
+        int c_col = atoi(ctoken);
+        ctoken = strtok(NULL, ",");
+        int c_width = atoi(ctoken);
+        ctoken = strtok(NULL, ",");
+        int c_height = atoi(ctoken);
+        int c_width_max = 0;
+        if((int)column >= c_col + c_width){
+            c_width_max = c_width*3; //*3 bc RGB triplets
+        }
+        else{
+            c_width_max = ((int)column - c_col)*3;
+        }
+        int c_height_max = 0; //Max number of row entries to save
+        if((int) row >= c_row + c_height){
+            c_height_max = c_height;
+        }
+        else{
+            c_height_max = (int)row - c_row;
+        }
 
-    //Pasting:
+        //printf("%i %i %i %i ", c_row, c_col, c_width, c_height);
+        unsigned int c_array[c_height_max][c_width_max];
 
+        printf("\nc_array Dimensions: %i %i\n",  c_width_max,c_height_max);
+        // exit(1);
+        int working_c_row_index = c_row; //starting row to copy from
+        int working_c_col_index = c_col*3; //starting col to copy from
+        int c_array_row_index = 0; //indices of the c array.
+        int c_array_col_index = 0;
+        while(c_array_row_index < c_height_max){
+            while(c_array_col_index < c_width_max){
+                c_array[c_array_row_index][c_array_col_index] = working_content_ppm_format[working_c_row_index][working_c_col_index];
+                //printf("%u ", working_content_ppm_format[working_c_row_index][working_c_col_index]);
+                working_c_col_index++;
+                c_array_col_index++;
+            }
+            c_array_col_index = 0; //reset to the start of the next row of c_array
+            working_c_col_index = c_col*3; //reset to the start of the next row of the working array
+            c_array_row_index++; //move to the next row of c_array
+            working_c_row_index++; //move to the next row of the working array
+        }
+        if(pflag == 1){
+            char *ptoken;
+            ptoken = strtok(pname, ",");
+            int p_row = atoi(ptoken);
+            ptoken = strtok(NULL, ",");
+            int p_col = atoi(ptoken);
+            int p_col_index = p_col*3; //index in triples col to start from
+            int p_row_index = p_row; //index in row to start from
+            int c_array_pasting_col_index = 0;
+            int c_array_pasting_row_index = 0;
+            int p_height_max = 0;
+            if((int)row - p_row > c_height_max){
+                p_height_max = c_height_max;
+            }
+            else{
+                p_height_max = (int)row - p_row;
+            }
+            int p_width_max = 0;
+            if(((int)column - p_col)*3 > c_width_max){
+                p_width_max = c_width_max; //c_width_max is already in triples, no need for *3
+            }
+            else{
+                p_width_max = ((int)column - p_col)*3;
+            }
+            // printf("p_height_max = %i", p_height_max);
+            while(p_row_index < p_row + p_height_max){
+                while(p_col_index < p_col*3 + p_width_max){
+                    working_content_ppm_format[p_row_index][p_col_index] = c_array[c_array_pasting_row_index][c_array_pasting_col_index];
+                    p_col_index++;
+                    c_array_pasting_col_index++;
+                }
+                p_col_index = p_col*3;
+                c_array_pasting_col_index = 0;
+                p_row_index++;
+                c_array_pasting_row_index++;
+                // printf("p_row index: %i \n", p_row_index);
+            }
+        }
+        // if(c_col + c_width - (int) column > 0){
+        //     c_width = (int)column - c_col + 1;
+        // }
+        // if(c_row + c_height - (int) row > 0){
+        //     c_height = (int)row - c_row + 1;
+        // }
+
+        // int **c_array = (int **)malloc(c_height * sizeof(int *));
+        // for (int i = 0; i < c_height; i++) {
+        //     c_array[i] = (int *)malloc(c_width * sizeof(int));
+        // }
+        // int c_current_row = 0;
+        // int c_current_col = 0;
+        
+        // for(int c_row_index = c_row; c_row_index < c_row + c_height; c_row_index++){
+        //     for(int c_col_index = c_col*3; c_col_index < (c_col + c_width)*3; c_col_index++){
+        //         c_array[c_current_row][c_current_col] = working_content_ppm_format[c_row_index][c_col_index];
+        //         // printf("%u ", c_array[c_current_row][c_current_col]);
+        //         c_current_col++;
+        //     }
+        //     //printf("\n\n");
+        //     c_current_row++;
+        // }
+        
+
+        //Pasting:
+        //printf("\n\n");
+        // if(pflag == 1){
+        //     char *ptoken;
+        //     ptoken = strtok(pname, ",");
+        //     int p_row = atoi(ptoken);
+        //     ptoken = strtok(NULL, ",");
+        //     int p_col = atoi(ptoken);
+        //     int p_current_row = 0;
+        //     int p_current_column = 0;
+        //     for(int p_row_index = p_row; p_row_index < p_row + c_height && p_row_index < (int)row ; p_row_index++){
+        //         for(int p_col_index = p_col*3; p_col_index < (p_col + c_width)*3 && p_col_index < (int)column*3; p_col_index++){ //This might throw seg fault by like a single pixel. do check <= vs <.
+        //             working_content_ppm_format[p_row_index][p_col_index] = c_array[p_current_row][p_current_column];
+        //             // printf("%u ", working_content_ppm_format[p_row_index][p_col_index]);
+        //             p_current_column++;
+        //         }
+        //         // printf("\n\n");
+        //         p_current_row++;
+        //     }
+        // }
+    }
+    
     //Writing with font:
 
     fclose(working_file); //End of reading the file.
@@ -422,7 +551,7 @@ int main(int argc, char **argv) {
                 working_content_current_row++ ;
             }
         }
-        printf("%u", working_content_ppm_format[0][0]);
+       // printf("%u", working_content_ppm_format[0][0]);
     }
     fclose(output_file);
     return 0;
