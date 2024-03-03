@@ -265,7 +265,85 @@ int main(int argc, char **argv) {
     working_content_current_row = 0;
     working_content_current_column = 0;
     if(!strcmp(oname_file_extension,".sbu")){//.SBU Output
-
+        fprintf(output_file,"SBU\n");
+        fprintf(output_file,"%u %u\n", column, row);
+        //You are basically going to build a color table while iterating through the content array. Read each triple as 3 seperate variables,
+        //and compare that to each triple in the color array. If there is a match, then move to the next. If there isn't then add the triple at the color array and move on.
+        unsigned int color_table_array[column*row*3]; //Safest allocation of memory is probably to assume each pixel has a unique color.
+        unsigned int rgb_value1 = 333;
+        unsigned int rgb_value2 = 333;
+        unsigned int rgb_value3 = 333;
+        int matching_rgb = 0; //Sets to 1 only when the RGB triplet finds a match in the color table
+        int matching_rgb_zero_case = 0; //Sets to 1 when first encountering 0 0 0.
+        int color_table_appending_index = 0;
+        int number_of_color_table_elements = 0;
+        while(working_content_current_row < row){ //This loop handles extracting all unique colors to the color table 1D array.
+            rgb_value1 = working_content_ppm_format[working_content_current_row][working_content_current_column];
+            rgb_value2 = working_content_ppm_format[working_content_current_row][working_content_current_column + 1];
+            rgb_value3 = working_content_ppm_format[working_content_current_row][working_content_current_column + 2];
+            // printf("Reading %u %u %u ", rgb_value1,rgb_value2,rgb_value3);
+            for(unsigned int color_table_array_index = 0; color_table_array_index < column*row*3 - 1; color_table_array_index += 3){ //Checks every triple!
+                if(rgb_value1 == 0 && rgb_value2 == 0 && rgb_value3 == 0 && matching_rgb_zero_case == 0){
+                    matching_rgb_zero_case = 1;
+                    break;
+                }
+                if(rgb_value1 == color_table_array[color_table_array_index] 
+                && rgb_value2 == color_table_array[color_table_array_index + 1] 
+                && rgb_value3 == color_table_array[color_table_array_index + 2]){
+                    matching_rgb = 1;
+                    // if(color_table_appending_index > 83571 && color_table_appending_index < 83580) {
+                    //     printf("CTa: %u %u %u\n", color_table_array[color_table_array_index], color_table_array[color_table_array_index+1], color_table_array[color_table_array_index+2]);
+                    //     printf("RGB: %u %u %u\n", rgb_value1,rgb_value2,rgb_value3);
+                    //     printf("Found at index: %i\n", color_table_array_index);
+                    // }
+                    // printf(" | Skipped\n");
+                    break; //if there's a match of the colors, don't do anything and stop checking the table
+                }
+                if(0 == color_table_array[color_table_array_index] 
+                && 0 == color_table_array[color_table_array_index + 1] 
+                && 0 == color_table_array[color_table_array_index + 2]
+                && 0 == color_table_array[color_table_array_index + 3] 
+                && 0 == color_table_array[color_table_array_index + 4] 
+                && 0 == color_table_array[color_table_array_index + 5]) break; //End of the currently written color table. Break to save on time reading a bunch of 0 triplets and such.
+            }//reads through the current color table built and checks for matches
+            if(matching_rgb_zero_case == 1){
+                color_table_appending_index += 3; //if it's the first encounter of 0 0 0, 'skip' to the next triple index to store the 0s.
+                matching_rgb_zero_case = 2; //Set it to 2 and never check for it again. This set of 0 0 0 is only to be stored once.
+                // printf("Added 0 0 0. to index %u\n",working_content_current_column);
+                number_of_color_table_elements++;
+            }
+            else if(matching_rgb == 0){
+                color_table_array[color_table_appending_index] = rgb_value1;
+                color_table_array[color_table_appending_index + 1] = rgb_value2;
+                color_table_array[color_table_appending_index + 2] = rgb_value3;
+                //printf("Wrote %u %u %u to Color Table index %i\n", rgb_value1,rgb_value2,rgb_value3,color_table_appending_index);
+                // if(color_table_appending_index > 83571 && color_table_appending_index < 83580) printf("Wrote %u %u %u to Color Table index %i\n", rgb_value1,rgb_value2,rgb_value3,color_table_appending_index);
+                color_table_appending_index += 3;
+                number_of_color_table_elements++;
+            }
+            matching_rgb = 0;
+            working_content_current_column += 3;
+            if(working_content_current_column > column*3 - 1){ //Remember to sync up the save and load checks!
+                working_content_current_column = 0;
+                working_content_current_row++ ;
+            }
+            
+        }
+        fprintf(output_file, "%i\n", number_of_color_table_elements);
+        for(int color_table_printing_index = 0; color_table_printing_index < number_of_color_table_elements*3; color_table_printing_index++){
+            // printf("Color table printing index: %i\n", color_table_printing_index);
+            // if(color_table_printing_index == 179960) printf("Color table data at index 179961+: %u \n", color_table_array[color_table_printing_index]);
+            fprintf(output_file, "%u ", color_table_array[color_table_printing_index]);
+        }
+        for(unsigned int i = 0; i < row*column*3 ; i++){
+            printf("%u ", color_table_array[i]);
+        }
+        // printf("numb: %i",number_of_color_table_elements*3);
+        // printf("Color table data at index 179961,2,3: %u %u %u", color_table_array[179961], color_table_array[179962], color_table_array[179963]);
+        //To construct the content from the color table, compare each triple to the color table, search for the corresponding index, and insert that index. 
+        //The star value can either be handled along with this, or another pass can be done to handle the repeats to create star values afterwards.
+        //Count the number of times the triplet appears until you hit a unique one (prob need a leading and a lagging pointer for this), add 1 to a counter until you hit the differing one
+        //then paste '*'counter, and the index of the colortable right after. In the case that counter == 1 (as in, the pixel only appears once), just fprintf the index of colortable.
     }
     else{ //.PPM Output
         fprintf(output_file,"P3\n");
