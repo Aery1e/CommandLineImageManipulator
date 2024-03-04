@@ -648,8 +648,24 @@ int main(int argc, char **argv) {
         int r_height_max = 0;
         int message_array_row_index = 0;
         int message_array_col_index = 0;
+        // int overflow_max_length;
         if((int)column - r_col > r_message_length) r_width_max = r_message_length*3;
-        else r_width_max = ((int) column - r_col)*3;
+        else {
+            // r_width_max = ((int) column - r_col)*3;
+            for(int i = 0; i < r_message_length; i++){
+                int is_spacebar_final = 0;
+                for(int j = 0; j < r_message_height; j++){
+                    if(scaled_message_array_space_sanitized[j][i] == '*'){
+                        is_spacebar_final = 0;
+                        break;
+                    }
+                    else{
+                        is_spacebar_final = 1;
+                    }
+                }
+                if(is_spacebar_final == 1 && r_width_max < ((int)column - r_col)*3 && (i*3) <= ((int)column - r_col)*3) r_width_max = (i)*3; //Moves to the last spacebar available
+            }
+        }
         if((int)row - r_row > r_message_height) r_height_max = r_message_height;
         else r_height_max = (int)row - r_row;
         printf("Max height: %i \n", r_height_max);
