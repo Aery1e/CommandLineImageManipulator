@@ -123,6 +123,11 @@ int main(int argc, char **argv) {
         }
     }
     int rnumberofcommas = 0;
+    char *message = 0;
+    char *font_path = 0;
+    int font_size = 0;
+    int r_row = 0;
+    int r_col = 0;
     if(rname != NULL){
         // printf("cname: %s\n",cname);
         // int length_of_cname = strlen(cname);
@@ -134,11 +139,18 @@ int main(int argc, char **argv) {
         if(rnumberofcommas != 4 || rname_end == ','){
             return R_ARGUMENT_INVALID;
         }
-        char *token;
-        token = strtok(rname, ",");
-        token = strtok(NULL, ",");
-        printf("1: %s\n", token);
-        if(!fopen(token,"r")){
+        char *rtoken;
+        rtoken = strtok(rname, ",");
+        message = rtoken;
+        rtoken = strtok(NULL, ",");
+        font_path = rtoken;
+        rtoken = strtok(NULL, ",");
+        font_size = atoi(rtoken);
+        rtoken = strtok(NULL, ",");
+        r_row = atoi(rtoken);
+        rtoken = strtok(NULL, ",");
+        r_col = atoi(rtoken);
+        if(!fopen(font_path,"r")){
             return R_ARGUMENT_INVALID;
         } //this is never closed... uh oh
     }
@@ -231,6 +243,8 @@ int main(int argc, char **argv) {
             }
         }
     }
+    fclose(working_file); //End of reading the file. //The heck was this doing in rflag below check?
+
     //Create an 2d array with the dimensions from the previous step
     //Loop through the content starting from line 4 to the end of the file, store each line's content into an array, and that array into the column/row (2d array stuff)
     //Printing Stuff:
@@ -300,6 +314,7 @@ int main(int argc, char **argv) {
             c_array_row_index++; //move to the next row of c_array
             working_c_row_index++; //move to the next row of the working array
         }
+        //Pasting:
         if(pflag == 1){
             char *ptoken;
             ptoken = strtok(pname, ",");
@@ -387,8 +402,276 @@ int main(int argc, char **argv) {
     }
     
     //Writing with font:
+    if(rflag == 1){
+        printf("%s %s %i %i %i\n", message, font_path, font_size, r_row, r_col);
+        //Open the font file:
+        FILE *font_file = fopen(font_path, "r");
+        int fontnumRows = 0, fontnumCols = 0;
+        int ch;
+        while ((ch = fgetc(font_file)) != EOF) {
+            if (ch == '\n') {
+                fontnumRows++; //Increment row count on newline
+            } else {
+                fontnumCols++; //Increment column count for each character
+            }
+        }
+        fontnumCols = fontnumCols/fontnumRows;
+        //Reset file pointer to the beginning of the file
+        fseek(font_file, 0, SEEK_SET);
+        //Create a font array
+        char font_array[fontnumRows][fontnumCols];
+        printf("Length of font file: %i\n", fontnumCols);
+        printf("Height of font file: %i\n", fontnumRows);
+        char current_font_char;
+        int current_font_array_col = 0;
+        for(int maxfontrow = 0; maxfontrow < fontnumRows; maxfontrow++){ //Dumps the contents of the font file into a font array
+            current_font_array_col = 0;
+            while(fscanf(font_file,"%c", &current_font_char) == 1 && current_font_char != '\n'){
+                font_array[maxfontrow][current_font_array_col] = current_font_char;
+                // printf("%i %i : %c | ", maxfontrow, current_font_array_col, font_array[maxfontrow][current_font_array_col]);
+                current_font_array_col++;
+            }
+            current_font_array_col = 0; 
+            // printf("SPLIT\n");
+        }
+        fclose(font_file);
+        //Create a font array of writing message.
+        char message_array[fontnumRows][strlen(message)*fontnumRows*2]; //We'll never really hit the end of the array, don't try to account for it. The size is overkill bc of the inconsistency of the font widths. It'll all be blanks tho, so that's alright.
+        for(int i = 0; i < fontnumRows; i++){
+            for(int j = 0; j < (int)strlen(message)*fontnumRows*2; j++){
+                message_array[i][j] = ' ';
+            }
+        }//Quick and dirty way of allocating a 2D array of spaces.
+        int space_counter = 0;
+        //Look for a vertical bar of spaces, adding to a counter when one is found, and a special case in which if there are 2 next to each other to only count 1. 
+        //Also consider when the font leads with a space bar.
+        // printf("message 0 0: a%ca\n", message_array[0][0]);
+        // printf("%c %c %c %c\n", message[0],message[1],message[2], message[3]);
+        int letter_index = 0;
+        int font_message_array_index = 0;
+        for(int message_index = 0; message_index < (int)strlen(message); message_index++){ //"for each letter of the message"
+            space_counter = 0;
+            letter_index = 0; //The index of the current message character, with A = 1.
+            if(message[message_index] > 90){
+                letter_index = message[message_index] - 32 - 64; //Shifts from lower to uppercase. Then to an index where A = 1.
+            }
+            else{
+                letter_index = message[message_index] - 64;
+            }
+            if(letter_index == -32){ //Counts spaces in msg?
+                font_message_array_index += 5; // 5 as the space character, no +1.
+                continue;
+            }
+            // printf("%i ", letter_index);
+            //Create a loop to iterate through the font array and look for those space vert bars. Remember to check if the next bar is also a space, 
+            //and check if the first bar index is a space.
+            int letter_starting_index = 0;
+            // printf("font array 0: %c\n",font_array[0][0]);
+            if(font_array[0][0] == ' '){
+                for(int i = 0; i < fontnumRows; i++){
+                    if(font_array[i][0] == '*'){
+                        // printf("Found a * at row %i \n",i);
+                        letter_starting_index = 0;
+                        break; //Break if we encounter a filled slot
+                    }
+                    else{
+                        letter_starting_index = 1; //Set the starting index of the letter (where to start copying from) to 1 instead, skipping over the front space.
+                        // printf("Found a space at row %i\n",i);
+                    }
+                }
+            } 
+            int letter_ending_index = 0; //Not inclusive. Represents the ending spacebar. Be sure to do < letter_ending_index instead of <=.
+            // printf("Starting array index: %i\n", letter_starting_index);
+            // printf("Ending array index: %i\n", letter_ending_index);
+            for(int spacebar_bar_checking_index = 0; spacebar_bar_checking_index < fontnumCols; spacebar_bar_checking_index++){ //"For each column, check for the bar of spaces. Add one to the space counter if so, and update the starting and ending indices"
+                //Check the column and the slots below it
+                int is_a_spacebar = 0;
+                int is_a_duplicate_spacebar = 0;
+                for(int column_space_checking_index = 0; column_space_checking_index < fontnumRows; column_space_checking_index++){//"Check downwward/vertically"
+                    if(font_array[column_space_checking_index][spacebar_bar_checking_index] == '*'){
+                        is_a_spacebar = 0; 
+                        break; //Break if we encounter a filled slot
+                    }
+                    else{
+                        is_a_spacebar = 1; //The whole column is spacebars
+                    }
+                }
+                if(is_a_spacebar == 1){
+                    for(int column_space_checking_index = 0; column_space_checking_index < fontnumRows; column_space_checking_index++){//"Check downwward/vertically"
+                        if(font_array[column_space_checking_index][spacebar_bar_checking_index + 1] == '*'){
+                            is_a_duplicate_spacebar = 0; 
+                            break; //Break if we encounter a filled slot
+                        }
+                        else{
+                            is_a_duplicate_spacebar = 1; //The whole column is spacebars
+                        }
+                    }
+                }
+                if(is_a_duplicate_spacebar == 1){ //Checks for duplicate, moves the ending index accordingly over so we catch the bounding box.
+                    letter_ending_index++;
+                    continue;
+                } 
+                if(is_a_spacebar == 1 && spacebar_bar_checking_index == 0 && is_a_duplicate_spacebar == 0){ //if it's the first entry, ignore the space bar.
+                    continue;
+                }
+                if(is_a_spacebar == 1){
+                    if(letter_ending_index == 0) letter_starting_index = 0;
+                    else letter_starting_index = letter_ending_index + 1; //Set the starting index of the letter (where to start copying from) to 1 instead, skipping over the front space.
+                    // printf("letter starting index updated to: %i\n", letter_starting_index);
+                    
+                    letter_ending_index = spacebar_bar_checking_index; //Write the ending index to the point of the spacebar
+                    // printf("letter ending index updated to: %i\n",letter_ending_index);
+                    space_counter++;
+                    // printf("Space counter: %i\n\n", space_counter);
 
-    fclose(working_file); //End of reading the file.
+                }
+                if(space_counter == letter_index) break;   
+            }
+            // printf("Space counter: %i\n", space_counter);
+            // printf("letter starting index: %i\n", letter_starting_index);
+            // printf("letter ending index: %i\n",letter_ending_index);
+            int font_message_array_starting_index = font_message_array_index;
+            if(space_counter == letter_index){ // Remember, 'A' = 1 .
+                for(int message_array_row_index = 0; message_array_row_index < fontnumRows; message_array_row_index++){ //They share the same row indices so we can do this.
+                    font_message_array_starting_index = font_message_array_index; //Need a variable to represent where to start each newly written row.
+                    for(int letter_writing_start_index = letter_starting_index; letter_writing_start_index < letter_ending_index; letter_writing_start_index++){
+                        message_array[message_array_row_index][font_message_array_starting_index] = font_array[message_array_row_index][letter_writing_start_index];
+                        // printf("%c",message_array[message_array_row_index][font_message_array_starting_index]);
+                        font_message_array_starting_index++;
+                    }
+                    // printf("\n");
+                }
+                // printf("Written at message array index: %i\n", font_message_array_index);
+                font_message_array_index += letter_ending_index - letter_starting_index + 1; //Updates the message array's starting index with the length of the written word.
+            }
+            
+                
+        } //B
+        // for(int i = 0; i < fontnumRows; i++){
+        //     for(int j = 0; j < font_message_array_index; j++){
+        //         printf("%c", message_array[i][j]);
+        //     }
+        //     printf("\n");
+        // } //Printing msg array
+        // printf("\n%i ", space_counter);
+        //Once you have the message_array, scale it accordingly by the scale int. You may as well do it for 1 inclusive anyways since we're here and it'll be inclusive
+        char scaled_message_array[fontnumRows*font_size][font_message_array_index*font_size];
+        for (int scale_message_rows = 0; scale_message_rows < fontnumRows; scale_message_rows++) {
+            for (int scale_message_col = 0; scale_message_col < font_message_array_index; scale_message_col++) {
+                char current_char = message_array[scale_message_rows][scale_message_col];
+                for (int scale_message_row_multiplying_index = 0; scale_message_row_multiplying_index < font_size; scale_message_row_multiplying_index++) {
+                    for (int scale_message_col_multiplying_index = 0; scale_message_col_multiplying_index < font_size; scale_message_col_multiplying_index++) {
+                        scaled_message_array[scale_message_rows * font_size + scale_message_row_multiplying_index][scale_message_col * font_size + scale_message_col_multiplying_index] = current_char;
+                    }
+                }
+            }
+        }
+        // for(int i = 0; i < fontnumRows*font_size; i++){
+        //     for(int j = 0; j < font_message_array_index*font_size; j++){
+        //         printf("%c", scaled_message_array[i][j]);
+        //     }
+        //     printf("\n");
+        // }
+        int scalednumRows = fontnumRows*font_size;
+        int scalednumCols = font_message_array_index*font_size;
+        char scaled_message_array_space_sanitized[scalednumRows][scalednumCols]; //The sanitized array will likely be smaller than the original, we'll keep track of the actual length by a seperate counter.
+        for(int i = 0; i < scalednumRows; i++){
+            for(int j = 0; j < scalednumCols; j++){
+                scaled_message_array_space_sanitized[i][j] = ' ';
+            }
+        }//Quick and dirty way of allocating a 2D array of spaces.
+        int sanitized_col_index = 0;
+        for(int shared_row_index = 0; shared_row_index < scalednumRows; shared_row_index++){ //Both arrays have the same row counter, hence "shared"
+            sanitized_col_index = 0; //To keep track of the sanitized array's col index
+            int spacebar_counter = 0;
+            for(int scaled_col_index = 0; scaled_col_index < scalednumCols; scaled_col_index++){ //keeping track of the original col index, as we want to iterate all values
+                for(int scaled_spacebar_counting_index = scaled_col_index; scaled_spacebar_counting_index< scalednumCols; scaled_spacebar_counting_index++){ //Reads from the current index rightwards, counts the number of consecutive spacebars and returns that as counter.
+                    int has_spacebar = 0;
+                    for(int scaled_spacebar_checking_row = 0; scaled_spacebar_checking_row < scalednumRows; scaled_spacebar_checking_row++){ //Check down the rows for a vertical spacebar
+                        if(scaled_message_array[scaled_spacebar_checking_row][scaled_spacebar_counting_index] == '*'){
+                            has_spacebar = 0;
+                            break;
+                        }
+                        else {
+                            has_spacebar = 1;  
+                        }
+                    }
+                    if(has_spacebar == 1){
+                        spacebar_counter++;
+                        // printf("font size : %i\n", font_size);
+                        // printf("spacebar_counter == font_size : %i\n", spacebar_counter == font_size);
+                        // printf("spacebar_counter == 7*font_size : %i\n", spacebar_counter == 7*font_size);
+                        // printf("has_spacebar == 0 : %i\n", has_spacebar == 0);
+                    }
+                    else{
+                        break;
+                    }
+                }
+                // printf("%i ",spacebar_counter);
+                if(spacebar_counter == font_size){
+                    //Append a single space
+                    //scaled_message_array_space_sanitized[shared_row_index][sanitized_col_index] = ' ';
+                    sanitized_col_index++;
+                    scaled_col_index+= font_size - 1;
+                }
+                else if(spacebar_counter == 6*font_size){
+                    //Append 7 spaces
+                    sanitized_col_index+=6;
+                    scaled_col_index += 6*font_size-1;
+                }
+                else{
+                    //Append original content
+                    scaled_message_array_space_sanitized[shared_row_index][sanitized_col_index] = scaled_message_array[shared_row_index][scaled_col_index];
+                    // printf("%c",scaled_message_array_space_sanitized[shared_row_index][sanitized_col_index]);
+                
+                    sanitized_col_index++;
+                }
+                spacebar_counter = 0;
+                
+            }
+            // printf("\n");
+        }
+        // for(int i = 0; i < scalednumRows; i++){
+        //     for(int j = 0; j < sanitized_col_index; j++){
+        //         printf("%c", scaled_message_array_space_sanitized[i][j]);
+        //     }
+        //     printf("\n");
+        // }
+
+        //Read and paste it similar to the paste function.
+        printf("Text paste coordinates: %i %i \n", r_col , r_row);
+        int r_col_index = r_col*3;
+        int r_row_index = r_row;
+        int r_message_length = sanitized_col_index;
+        int r_message_height = scalednumRows;
+        int r_width_max = 0;
+        int r_height_max = 0;
+        int message_array_row_index = 0;
+        int message_array_col_index = 0;
+        if((int)column - r_col > r_message_length) r_width_max = r_message_length*3;
+        else r_width_max = ((int) column - r_col)*3;
+        if((int)row - r_row > r_message_height) r_height_max = r_message_height;
+        else r_height_max = (int)row - r_row;
+        printf("Max height: %i \n", r_height_max);
+        printf("Max width: %i\n", r_width_max);
+        while(r_row_index < r_row + r_height_max){
+            while(r_col_index < r_col*3 + r_width_max){
+                if(scaled_message_array_space_sanitized[message_array_row_index][message_array_col_index] == '*'){
+                    working_content_ppm_format[r_row_index][r_col_index] = 255;
+                    working_content_ppm_format[r_row_index][r_col_index + 1] = 255;
+                    working_content_ppm_format[r_row_index][r_col_index + 2] = 255;
+                }
+                r_col_index+=3;
+                message_array_col_index++;
+            }
+            r_col_index = r_col*3;
+            message_array_col_index = 0;
+            r_row_index++;
+            message_array_row_index++;
+            // printf("p_row index: %i \n", p_row_index);
+        }
+    }
+        
 
     //Exporting/Saving the file:
     FILE *output_file = fopen(oname,"w");
