@@ -639,7 +639,7 @@ int main(int argc, char **argv) {
         // }
 
         //Read and paste it similar to the paste function.
-        printf("Text paste coordinates: %i %i \n", r_col , r_row);
+        // printf("Text paste coordinates: %i %i \n", r_col , r_row);
         int r_col_index = r_col*3;
         int r_row_index = r_row;
         int r_message_length = sanitized_col_index;
@@ -668,8 +668,8 @@ int main(int argc, char **argv) {
         }
         if((int)row - r_row > r_message_height) r_height_max = r_message_height;
         else r_height_max = (int)row - r_row;
-        printf("Max height: %i \n", r_height_max);
-        printf("Max width: %i\n", r_width_max);
+        // printf("Max height: %i \n", r_height_max);
+        // printf("Max width: %i\n", r_width_max);
         while(r_row_index < r_row + r_height_max){
             while(r_col_index < r_col*3 + r_width_max){
                 if(scaled_message_array_space_sanitized[message_array_row_index][message_array_col_index] == '*'){
